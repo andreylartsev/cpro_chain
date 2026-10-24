@@ -62,15 +62,40 @@ crontab -e
 
 2. Добавьте запись. Например, запуск каждый день в 03:00:
 ```cron
-0 3 * * * /bin/bash /path/to/project/get_chain.sh >> /var/log/cpro_chain_downloader.log 2>&1
+0 3 * * * /bin/bash /path/to/project/get_chain.sh
 ```
 
 Или запуск каждый час:
 ```cron
-0 * * * * /bin/bash /path/to/project/get_chain.sh >> /var/log/cpro_chain_downloader.log 2>&1
+0 * * * * /bin/bash /path/to/project/get_chain.sh
 ```
 
 **Рекомендации:**
 - Укажите **абсолютный путь** к `get_chain.sh` и при необходимости поправьте `PROJECT_DIR` в самом скрипте (либо экспортируйте переменные окружения в crontab).
 - Убедитесь, что у пользователя, под которым запускается cron, есть доступ к `certmgr`, `curl`, сетевые права и права на запись в `downloaded_chain/`.
-- Логи также доступны через `journalctl -t cpro_chain_downloader` или в системном syslog.
+- Логи доступны через `journalctl -t cpro_chain_downloader` или в системном syslog.
+
+## Пример конфигурации для syslog-ng
+
+Если используется `syslog-ng`, можно добавить отдельный файл (например, `/etc/syslog-ng/conf.d/cpro_chain.conf`):
+
+```conf
+# Фильтр по тегу скрипта
+filter f_cpro_chain {
+    program("cpro_chain_downloader");
+};
+
+# Отдельный файл логов
+destination d_cpro_chain {
+    file("/var/log/cpro_chain_downloader.log" perm(0640));
+};
+
+# Правило маршрутизации
+log {
+    source(s_sys);
+    filter(f_cpro_chain);
+    destination(d_cpro_chain);
+};
+```
+
+После добавления перезагрузите syslog-ng: `systemctl reload syslog-ng`.

@@ -36,11 +36,13 @@ mkdir -p "$OUTPUT_DIR" || {
 # Функция отправки логов в syslog и консоль одновременно
 log_message() {
     local msg="$1"
-    # Вывод в консоль для ручного запуска
-    echo -e "$msg"
-    # Отправка в системный лог (syslog) без ANSI-цветов и лишних символов
     local clean_msg
     clean_msg=$(echo "$msg" | sed 's/\x1b\[[0-9;]*m//g' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    # Вывод в консоль только если есть терминал (интерактивный запуск)
+    if [ -t 1 ] || [ -t 2 ]; then
+        echo -e "$msg"
+    fi
+    # Отправка в системный лог (syslog) без ANSI-цветов и лишних символов
     if [ -x "$LOGGER" ]; then
         "$LOGGER" -p "$SYSLOG_FACILITY" -t "$SYSLOG_TAG" "$clean_msg" 2>/dev/null || true
     fi
